@@ -12,8 +12,7 @@ plugins {
     signing
 }
 
-group = "dev.sublab"
-version = "1.0.0"
+group = "com.github.ostafen"
 
 repositories {
     mavenLocal()
@@ -95,5 +94,15 @@ val javadocJar by tasks.registering(Jar::class) {
 tasks.javadoc {
     if (JavaVersion.current().isJava9Compatible) {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
+    }
+}
+
+publishing {
+    publications {
+        register("jitpack", MavenPublication::class) {
+            groupId = groupId
+            artifactId = rootProject.name
+            version = version
+        }
     }
 }
