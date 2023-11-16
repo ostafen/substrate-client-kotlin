@@ -4,6 +4,8 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
     id("org.jetbrains.dokka")
+    `maven-publish`
+    signing
 }
 
 group = "dev.sublab"
@@ -89,5 +91,15 @@ val javadocJar by tasks.registering(Jar::class) {
 tasks.javadoc {
     if (JavaVersion.current().isJava9Compatible) {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
+    }
+}
+
+publishing {
+    publications {
+        register("jitpack", MavenPublication::class) {
+            groupId = groupId
+            artifactId = rootProject.name
+            version = version
+        }
     }
 }
