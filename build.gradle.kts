@@ -1,5 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+kotlin {
+    jvmToolchain(17)
+}
+
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
@@ -97,7 +101,7 @@ tasks.javadoc {
 publishing {
     publications {
         register("jitpack", MavenPublication::class) {
-            groupId = groupId
+            groupId = "com.github.ostafen"
             artifactId = rootProject.name
             version = version
         }
