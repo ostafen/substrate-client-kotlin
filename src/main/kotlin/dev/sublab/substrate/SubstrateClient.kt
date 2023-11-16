@@ -29,6 +29,7 @@ import dev.sublab.substrate.rpcClient.RpcClient
 import dev.sublab.substrate.utils.JobWithTimeout
 import dev.sublab.substrate.webSocketClient.WebSocket
 import dev.sublab.substrate.webSocketClient.WebSocketClient
+import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -41,7 +42,7 @@ typealias HexScaleCodec = ScaleCodec<String>
  */
 class SubstrateClient(
     url: String,
-    port: Int,
+    port: Int= URLProtocol.HTTPS.defaultPort,
     settings: SubstrateClientSettings = SubstrateClientSettings.default(),
     private val codecProvider: ScaleCodecProvider = ScaleCodecProvider.default(),
     private val hashers: HashersProvider = DefaultHashersProvider(),
