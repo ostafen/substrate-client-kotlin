@@ -8,12 +8,5 @@ pluginManagement {
         kotlin("plugin.serialization") version kotlinVersion
         id("org.jetbrains.dokka") version dokkaVersion
         id("io.github.gradle-nexus.publish-plugin") version nexusVersion
-        `maven-publish`
-        signing
     }
-
-    val ossrhUsername: String by settings
-    val ossrhPassword: String by settings
-    extra.set("ossrhUsername", ossrhUsername)
-    extra.set("ossrhPassword", ossrhPassword)
 }
