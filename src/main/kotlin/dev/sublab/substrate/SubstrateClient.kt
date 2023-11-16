@@ -41,12 +41,13 @@ typealias HexScaleCodec = ScaleCodec<String>
  */
 class SubstrateClient(
     url: String,
+    port: Int,
     settings: SubstrateClientSettings = SubstrateClientSettings.default(),
     private val codecProvider: ScaleCodecProvider = ScaleCodecProvider.default(),
     private val hashers: HashersProvider = DefaultHashersProvider(),
     private val moduleProvider: InternalModuleProvider = DefaultModuleProvider(
         codecProvider = codecProvider,
-        rpc = RpcClient(url, settings.rpcPath, settings.rpcParams),
+        rpc = RpcClient(url, port, settings.rpcPath, settings.rpcParams),
         hashersProvider = hashers
     )
 ) {
