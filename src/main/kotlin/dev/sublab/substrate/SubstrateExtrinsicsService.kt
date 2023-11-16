@@ -20,6 +20,7 @@ package dev.sublab.substrate
 
 import dev.sublab.encrypting.keys.KeyPair
 import dev.sublab.encrypting.signing.SignatureEngine
+import dev.sublab.hex.hex
 import dev.sublab.scale.ScaleCodec
 import dev.sublab.ss58.AccountId
 import dev.sublab.ss58.ss58
@@ -30,7 +31,9 @@ import dev.sublab.substrate.metadata.lookup.type.RuntimeTypeDef
 import dev.sublab.substrate.metadata.lookup.type.def.RuntimeTypeDefVariant
 import dev.sublab.substrate.metadata.modules.RuntimeModule
 import dev.sublab.substrate.modules.chain.ChainModule
+import dev.sublab.substrate.modules.extrinsics.SubmitExtrinsicsModule
 import dev.sublab.substrate.modules.system.SystemModule
+import dev.sublab.substrate.rpcClient.RpcClient
 import dev.sublab.substrate.scale.Balance
 import dev.sublab.substrate.scale.Index
 import dev.sublab.sugar.or
@@ -52,6 +55,12 @@ interface SubstrateExtrinsics {
         tip: Balance,
         keyPair: KeyPair
     ): Payload?
+
+    suspend fun <T: Any> makeAndSubmitSigned(
+        call: Call<T>,
+        tip: Balance,
+        keyPair: KeyPair,
+    ): String?
 }
 
 /**
@@ -59,6 +68,7 @@ interface SubstrateExtrinsics {
  */
 internal class SubstrateExtrinsicsService(
     private val runtimeMetadata: Flow<RuntimeMetadata>,
+    private val extrinsicsModule: SubmitExtrinsicsModule,
     private val systemRpc: SystemModule,
     private val chainRpc: ChainModule,
     private val codec: ScaleCodec<ByteArray>,
@@ -179,4 +189,10 @@ internal class SubstrateExtrinsicsService(
         tip: Balance,
         keyPair: KeyPair
     ) = makeSigned(call, tip, keyPair.publicKey.ss58.accountId(), keyPair.getSignatureEngine(keyPair.privateKey))
+
+    override suspend fun <T : Any> makeAndSubmitSigned(call: Call<T>, tip: Balance, keyPair: KeyPair): String? {
+        val callDataPayload = makeSigned(call, tip, keyPair)
+
+        return extrinsicsModule.submitCall(callDataPayload.toByteArray().hex.encode())
+    }
 }

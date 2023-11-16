@@ -24,6 +24,7 @@ import dev.sublab.substrate.SubstrateClient
 import dev.sublab.substrate.hashers.HashersProvider
 import dev.sublab.substrate.modules.chain.ChainModule
 import dev.sublab.substrate.modules.chain.ChainModuleClient
+import dev.sublab.substrate.modules.extrinsics.AuthorExtrinsics
 import dev.sublab.substrate.modules.payment.PaymentModule
 import dev.sublab.substrate.modules.payment.PaymentModuleClient
 import dev.sublab.substrate.modules.state.StateModule
@@ -41,6 +42,8 @@ class DefaultModuleProvider(
     private val hashersProvider: HashersProvider
 ): InternalModuleProvider {
     lateinit var client: SubstrateClient
+
+    override val extrinsics: AuthorExtrinsics get() = AuthorExtrinsics(rpc)
 
     override val chain: ChainModule get() = ChainModuleClient(rpc)
     override val state: StateModule get() = StateModuleClient(codecProvider.hex, rpc, hashersProvider)

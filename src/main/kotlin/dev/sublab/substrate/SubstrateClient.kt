@@ -25,6 +25,7 @@ import dev.sublab.substrate.metadata.RuntimeMetadata
 import dev.sublab.substrate.modules.DefaultModuleProvider
 import dev.sublab.substrate.modules.InternalModuleProvider
 import dev.sublab.substrate.modules.ModuleProvider
+import dev.sublab.substrate.modules.extrinsics.AuthorExtrinsics
 import dev.sublab.substrate.rpcClient.RpcClient
 import dev.sublab.substrate.utils.JobWithTimeout
 import dev.sublab.substrate.webSocketClient.WebSocket
@@ -91,6 +92,7 @@ class SubstrateClient(
         constants = SubstrateConstantsService(codecProvider.byteArray, lookup)
         storage = SubstrateStorageService(codecProvider.byteArray, lookup, modules.state)
         extrinsics = SubstrateExtrinsicsService(
+            extrinsicsModule = modules.extrinsics,
             runtimeMetadata = getRuntime(),
             systemRpc = modules.system,
             chainRpc = modules.chain,

@@ -20,6 +20,7 @@ package dev.sublab.substrate.modules
 
 import dev.sublab.substrate.SubstrateClient
 import dev.sublab.substrate.modules.chain.ChainModule
+import dev.sublab.substrate.modules.extrinsics.AuthorExtrinsics
 import dev.sublab.substrate.modules.payment.PaymentModule
 import dev.sublab.substrate.modules.state.StateModule
 import dev.sublab.substrate.modules.system.SystemModule
@@ -32,6 +33,8 @@ interface InternalModuleProvider: ModuleProvider {
  * An interface for getting RPCs
  */
 interface ModuleProvider {
+    val extrinsics: AuthorExtrinsics
+
     /**
      * Provides an interface for getting chain `RPC` client
      */
