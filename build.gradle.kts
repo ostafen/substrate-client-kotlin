@@ -103,6 +103,7 @@ publishing {
             groupId = groupId
             artifactId = rootProject.name
             version = version
+            from(components["kotlin"])
         }
     }
 }
