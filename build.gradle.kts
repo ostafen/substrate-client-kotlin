@@ -97,13 +97,3 @@ tasks.javadoc {
         (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }
 }
-
-publishing {
-    publications {
-        register("jitpack", MavenPublication::class) {
-            groupId = "com.github.ostafen"
-            artifactId = rootProject.name
-            version = version
-        }
-    }
-}
