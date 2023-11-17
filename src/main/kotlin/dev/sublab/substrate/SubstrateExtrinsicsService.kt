@@ -33,10 +33,10 @@ import dev.sublab.substrate.metadata.modules.RuntimeModule
 import dev.sublab.substrate.modules.chain.ChainModule
 import dev.sublab.substrate.modules.extrinsics.SubmitExtrinsicsModule
 import dev.sublab.substrate.modules.system.SystemModule
-import dev.sublab.substrate.rpcClient.RpcClient
 import dev.sublab.substrate.scale.Balance
 import dev.sublab.substrate.scale.Index
 import dev.sublab.sugar.or
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlin.reflect.KClass
 
@@ -48,18 +48,21 @@ interface SubstrateExtrinsics {
         call: Call<T>,
         tip: Balance,
         accountId: AccountId,
-        signatureEngine: SignatureEngine
+        signatureEngine: SignatureEngine,
+        nonce: Index?=null
     ): Payload?
     suspend fun <T: Any> makeSigned(
         call: Call<T>,
         tip: Balance,
-        keyPair: KeyPair
+        keyPair: KeyPair,
+        nonce: Index?=null
     ): Payload?
 
     suspend fun <T: Any> makeAndSubmitSigned(
         call: Call<T>,
         tip: Balance,
         keyPair: KeyPair,
+        nonce: Index?=null
     ): String?
 }
 
@@ -94,6 +97,7 @@ internal class SubstrateExtrinsicsService(
             }
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun findCall(moduleName: String, callName: String) = lookup
         .findModule(moduleName)
         .flatMapLatest { module ->
@@ -133,6 +137,7 @@ internal class SubstrateExtrinsicsService(
         callValue: T,
         callValueType: KClass<T>,
         tip: Balance,
+        nonce: Index?,
         accountId: AccountId,
         signatureEngine: SignatureEngine
     ): Payload = SignedPayload(
@@ -142,7 +147,7 @@ internal class SubstrateExtrinsicsService(
         runtimeVersion = systemRpc.runtimeVersion() ?: throw RuntimeVersionNotKnownException(),
         genesisHash = chainRpc.getBlockHash(0) ?: throw GenesisHashNotKnownException(),
         accountId = accountId,
-        nonce = systemRpc.accountByAccountId(accountId)?.nonce ?: throw NonceNotKnownException(),
+        nonce = nonce ?: systemRpc.accountByAccountId(accountId)?.nonce ?: throw NonceNotKnownException(),
         tip = tip,
         signatureEngine = signatureEngine
     )
@@ -173,12 +178,14 @@ internal class SubstrateExtrinsicsService(
         call: Call<T>,
         tip: Balance,
         accountId: AccountId,
-        signatureEngine: SignatureEngine
+        signatureEngine: SignatureEngine,
+        nonce: Index?
     ) = makeSigned(
         moduleName = call.moduleName,
         callName = call.name,
         callValue = call.value,
         callValueType = call.type,
+        nonce=nonce,
         tip = tip,
         accountId = accountId,
         signatureEngine = signatureEngine
@@ -187,11 +194,12 @@ internal class SubstrateExtrinsicsService(
     override suspend fun <T: Any> makeSigned(
         call: Call<T>,
         tip: Balance,
-        keyPair: KeyPair
-    ) = makeSigned(call, tip, keyPair.publicKey.ss58.accountId(), keyPair.getSignatureEngine(keyPair.privateKey))
+        keyPair: KeyPair,
+        nonce: Index?
+    ) = makeSigned(call, tip, keyPair.publicKey.ss58.accountId(), keyPair.getSignatureEngine(keyPair.privateKey), nonce)
 
-    override suspend fun <T : Any> makeAndSubmitSigned(call: Call<T>, tip: Balance, keyPair: KeyPair): String? {
-        val callDataPayload = makeSigned(call, tip, keyPair)
+    override suspend fun <T : Any> makeAndSubmitSigned(call: Call<T>, tip: Balance, keyPair: KeyPair, nonce: Index?): String? {
+        val callDataPayload = makeSigned(call, tip, keyPair, nonce)
 
         return extrinsicsModule.submitCall(callDataPayload.toByteArray().hex.encode())
     }
