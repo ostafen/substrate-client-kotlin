@@ -47,7 +47,7 @@ class DefaultModuleProvider(
 
     override val chain: ChainModule get() = ChainModuleClient(rpc)
     override val state: StateModule get() = StateModuleClient(codecProvider.hex, rpc, hashersProvider)
-    override val system: SystemModule get() = SystemModuleClient(client.constants, client.storage)
+    override val system: SystemModule get() = SystemModuleClient(rpc, client.constants, client.storage)
     override val payment: PaymentModule get() = PaymentModuleClient(codecProvider.hex, rpc)
 
     // Supply dependencies

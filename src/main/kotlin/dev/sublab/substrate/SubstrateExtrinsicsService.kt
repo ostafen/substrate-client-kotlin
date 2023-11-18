@@ -49,20 +49,17 @@ interface SubstrateExtrinsics {
         tip: Balance,
         accountId: AccountId,
         signatureEngine: SignatureEngine,
-        nonce: Index?=null
     ): Payload?
     suspend fun <T: Any> makeSigned(
         call: Call<T>,
         tip: Balance,
         keyPair: KeyPair,
-        nonce: Index?=null
     ): Payload?
 
     suspend fun <T: Any> makeAndSubmitSigned(
         call: Call<T>,
         tip: Balance,
         keyPair: KeyPair,
-        nonce: Index?=null
     ): String?
 }
 
@@ -137,7 +134,6 @@ internal class SubstrateExtrinsicsService(
         callValue: T,
         callValueType: KClass<T>,
         tip: Balance,
-        nonce: Index?,
         accountId: AccountId,
         signatureEngine: SignatureEngine
     ): Payload = SignedPayload(
@@ -147,7 +143,7 @@ internal class SubstrateExtrinsicsService(
         runtimeVersion = systemRpc.runtimeVersion() ?: throw RuntimeVersionNotKnownException(),
         genesisHash = chainRpc.getBlockHash(0) ?: throw GenesisHashNotKnownException(),
         accountId = accountId,
-        nonce = nonce ?: systemRpc.accountByAccountId(accountId)?.nonce ?: throw NonceNotKnownException(),
+        nonce = systemRpc.accountNextIndex(accountId) ?: throw NonceNotKnownException(),
         tip = tip,
         signatureEngine = signatureEngine
     )
@@ -159,8 +155,8 @@ internal class SubstrateExtrinsicsService(
         callValue: T,
         callValueType: KClass<T>,
         tip: Balance,
-        accountId: AccountId,
         nonce: Index,
+        accountId: AccountId,
         signatureEngine: SignatureEngine
     ): Payload = SignedPayload(
         runtimeMetadata = runtimeMetadata.first(),
@@ -169,8 +165,8 @@ internal class SubstrateExtrinsicsService(
         runtimeVersion = systemRpc.runtimeVersion() ?: throw RuntimeVersionNotKnownException(),
         genesisHash = chainRpc.getBlockHash(0) ?: throw GenesisHashNotKnownException(),
         accountId = accountId,
-        nonce = nonce,
         tip = tip,
+        nonce = nonce,
         signatureEngine = signatureEngine
     )
 
@@ -179,13 +175,11 @@ internal class SubstrateExtrinsicsService(
         tip: Balance,
         accountId: AccountId,
         signatureEngine: SignatureEngine,
-        nonce: Index?
     ) = makeSigned(
         moduleName = call.moduleName,
         callName = call.name,
         callValue = call.value,
         callValueType = call.type,
-        nonce=nonce,
         tip = tip,
         accountId = accountId,
         signatureEngine = signatureEngine
@@ -195,11 +189,10 @@ internal class SubstrateExtrinsicsService(
         call: Call<T>,
         tip: Balance,
         keyPair: KeyPair,
-        nonce: Index?
-    ) = makeSigned(call, tip, keyPair.publicKey.ss58.accountId(), keyPair.getSignatureEngine(keyPair.privateKey), nonce)
+    ) = makeSigned(call, tip, keyPair.publicKey.ss58.accountId(), keyPair.getSignatureEngine(keyPair.privateKey))
 
-    override suspend fun <T : Any> makeAndSubmitSigned(call: Call<T>, tip: Balance, keyPair: KeyPair, nonce: Index?): String? {
-        val callDataPayload = makeSigned(call, tip, keyPair, nonce)
+    override suspend fun <T : Any> makeAndSubmitSigned(call: Call<T>, tip: Balance, keyPair: KeyPair): String? {
+        val callDataPayload = makeSigned(call, tip, keyPair)
 
         return extrinsicsModule.submitCall(callDataPayload.toByteArray().hex.encode())
     }

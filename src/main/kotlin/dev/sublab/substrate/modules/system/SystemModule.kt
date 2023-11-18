@@ -28,19 +28,24 @@ import dev.sublab.substrate.SubstrateConstants
 import dev.sublab.substrate.SubstrateStorage
 import dev.sublab.substrate.modules.system.constants.RuntimeVersion
 import dev.sublab.substrate.modules.system.storage.Account
+import dev.sublab.substrate.rpcClient.Rpc
+import dev.sublab.substrate.scale.Index
 import kotlinx.coroutines.flow.first
+import java.math.BigInteger
 
 interface SystemModule {
     suspend fun runtimeVersion(): RuntimeVersion?
     suspend fun accountByAccountId(accountId: ByteArrayConvertible): Account?
     suspend fun accountByAccountId(accountId: AccountId): Account?
     suspend fun accountByAccountId(accountIdHex: String): Account?
+    suspend fun accountNextIndex(accountId: AccountId): Index?
     suspend fun accountByPublicKey(publicKey: ByteArray): Account?
     suspend fun accountByPublicKey(publicKeyHex: String): Account?
     suspend fun accountByKeyPair(keyPair: KeyPair): Account?
 }
 
 class SystemModuleClient(
+    private val rpc: Rpc,
     private val constants: SubstrateConstants,
     private val storage: SubstrateStorage
 ): SystemModule {
@@ -55,6 +60,16 @@ class SystemModuleClient(
 
     override suspend fun accountByAccountId(accountIdHex: String)
             = accountByAccountId(accountIdHex.hex.decode())
+
+    override suspend fun accountNextIndex(accountId: AccountId): Index? {
+        val res = rpc.sendRequest<String, BigInteger> {
+            method = "system_accountNextIndex"
+            responseType = BigInteger::class
+            params = listOf(accountId.ss58.address(42)) // generic prefix const
+            paramsType = String::class
+        }
+        return if (res == null) null else Index(res)
+    }
 
     override suspend fun accountByPublicKey(publicKey: ByteArray)
             = accountByAccountId(publicKey.ss58.accountId())
