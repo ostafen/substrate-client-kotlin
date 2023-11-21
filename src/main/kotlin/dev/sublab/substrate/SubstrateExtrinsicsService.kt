@@ -18,10 +18,13 @@
 
 package dev.sublab.substrate
 
+import dev.sublab.common.numerics.UInt8
 import dev.sublab.encrypting.keys.KeyPair
 import dev.sublab.encrypting.signing.SignatureEngine
 import dev.sublab.hex.hex
 import dev.sublab.scale.ScaleCodec
+import dev.sublab.scale.types.ScaleEncodedByteArray
+import dev.sublab.scale.types.asScaleEncoded
 import dev.sublab.ss58.AccountId
 import dev.sublab.ss58.ss58
 import dev.sublab.substrate.extrinsics.*
@@ -40,7 +43,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlin.reflect.KClass
 
-private data class RuntimeCall(val module: RuntimeModule, val variant: RuntimeTypeDefVariant.Variant)
+data class RuntimeCall(val module: RuntimeModule, val variant: RuntimeTypeDefVariant.Variant)
 
 interface SubstrateExtrinsics {
     suspend fun <T: Any> makeUnsigned(call: Call<T>): Payload
@@ -61,6 +64,8 @@ interface SubstrateExtrinsics {
         tip: Balance,
         keyPair: KeyPair,
     ): String?
+
+    suspend fun <T : Any> makeAndSubmitSignedAsSudo(call: Call<T>, tip: Balance, keyPair: KeyPair): String?
 }
 
 /**
@@ -196,4 +201,20 @@ internal class SubstrateExtrinsicsService(
 
         return extrinsicsModule.submitCall(callDataPayload.toByteArray().hex.encode())
     }
+
+    override suspend fun <T : Any> makeAndSubmitSignedAsSudo(call: Call<T>, tip: Balance, keyPair: KeyPair): String? {
+        val encodedCall = makeUnsigned(call).toByteArray()
+        return makeAndSubmitSigned(SudoSudoCall(SudoSudo(encodedCall.asScaleEncoded())), tip, keyPair)
+    }
 }
+
+data class SudoSudo(val encodedCall: ScaleEncodedByteArray)
+
+class SudoSudoCall(value: SudoSudo): Call<SudoSudo> (
+    moduleName="sudo",
+    name="sudo",
+    value = value,
+    type = SudoSudo::class
+)
+
+
