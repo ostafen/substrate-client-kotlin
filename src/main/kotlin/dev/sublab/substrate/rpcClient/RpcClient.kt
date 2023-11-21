@@ -18,6 +18,7 @@
 
 package dev.sublab.substrate.rpcClient
 
+import dev.sublab.substrate.Protocol
 import dev.sublab.substrate.utils.serializer
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -53,7 +54,7 @@ interface Rpc {
  */
 internal class RpcClient(
     private val host: String,
-    private val protocol: URLProtocol=URLProtocol.HTTPS,
+    private val protocol: Protocol=Protocol.HTTPS,
     private val path: String? = null,
     private val params: Map<String, Any?> = mapOf()
 ): Rpc {
@@ -73,7 +74,7 @@ internal class RpcClient(
      */
     override suspend fun send(request: RpcRequest): RpcResponse = httpClient.post {
         url {
-            protocol =this@RpcClient.protocol
+            protocol = URLProtocol(this@RpcClient.protocol.scheme, this@RpcClient.protocol.port)
             host = this@RpcClient.host
             pathSegments = listOfNotNull(this@RpcClient.path)
             for ((key, value) in params) {
