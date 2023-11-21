@@ -53,7 +53,7 @@ interface Rpc {
  */
 internal class RpcClient(
     private val host: String,
-    private val port: Int=URLProtocol.HTTPS.defaultPort,
+    private val protocol: URLProtocol=URLProtocol.HTTPS,
     private val path: String? = null,
     private val params: Map<String, Any?> = mapOf()
 ): Rpc {
@@ -73,8 +73,7 @@ internal class RpcClient(
      */
     override suspend fun send(request: RpcRequest): RpcResponse = httpClient.post {
         url {
-            protocol = URLProtocol.HTTPS
-            port=this@RpcClient.port
+            protocol =this@RpcClient.protocol
             host = this@RpcClient.host
             pathSegments = listOfNotNull(this@RpcClient.path)
             for ((key, value) in params) {

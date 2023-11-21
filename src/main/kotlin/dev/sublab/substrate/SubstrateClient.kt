@@ -43,13 +43,13 @@ typealias HexScaleCodec = ScaleCodec<String>
  */
 class SubstrateClient(
     url: String,
-    port: Int= URLProtocol.HTTPS.defaultPort,
+    protocol: URLProtocol=URLProtocol.HTTPS,
     settings: SubstrateClientSettings = SubstrateClientSettings.default(),
     private val codecProvider: ScaleCodecProvider = ScaleCodecProvider.default(),
     private val hashers: HashersProvider = DefaultHashersProvider(),
     private val moduleProvider: InternalModuleProvider = DefaultModuleProvider(
         codecProvider = codecProvider,
-        rpc = RpcClient(url, port, settings.rpcPath, settings.rpcParams),
+        rpc = RpcClient(url, protocol, settings.rpcPath, settings.rpcParams),
         hashersProvider = hashers
     )
 ) {
