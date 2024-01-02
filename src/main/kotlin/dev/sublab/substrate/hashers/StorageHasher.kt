@@ -69,8 +69,8 @@ class StorageHasher(
     override fun hash(storageItem: RuntimeModuleStorageItem, keys: List<ByteArrayConvertible>) = when (storageItem.type) {
         is RuntimeModuleStorageItemType.Plain -> hashPlainKey(storageItem)
         is RuntimeModuleStorageItemType.Map -> {
-            check(keys.size == storageItem.type.value.hashers.size) { "Keys count should be equal to hashers count" }
-            hashMapKey(storageItem, keys, storageItem.type.value.hashers)
+            //check(keys.size == storageItem.type.value.hashers.size) { "Keys count should be equal to hashers count" }
+            hashMapKey(storageItem, keys, storageItem.type.value.hashers.take(keys.size))
         }
     }
 }

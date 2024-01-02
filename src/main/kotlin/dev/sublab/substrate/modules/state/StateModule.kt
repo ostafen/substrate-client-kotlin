@@ -26,6 +26,8 @@ import dev.sublab.substrate.metadata.RuntimeMetadata
 import dev.sublab.substrate.metadata.modules.storage.RuntimeModuleStorage
 import dev.sublab.substrate.metadata.modules.storage.item.RuntimeModuleStorageItem
 import dev.sublab.substrate.rpcClient.Rpc
+import dev.sublab.substrate.utils.serializer
+import kotlinx.serialization.builtins.ListSerializer
 import kotlin.reflect.KClass
 
 /**
@@ -76,6 +78,18 @@ interface StateModule {
         storage: RuntimeModuleStorage,
         type: KClass<T>
     ): T?
+
+    suspend fun <T: Any> fetchStorageKeys(
+        key: ByteArray,
+        type: KClass<T>
+    ): List<T>
+
+    suspend fun <T: Any> fetchStorageKeys(
+        item: RuntimeModuleStorageItem,
+        keys: List<ByteArrayConvertible>,
+        storage: RuntimeModuleStorage,
+        type: KClass<T>
+    ): List<T>
 }
 
 /**
@@ -99,15 +113,38 @@ class StateModuleClient(
     private suspend fun <T: Any> fetchStorageItem(
         key: ByteArray,
         type: KClass<T>
-    ) = rpc.sendRequest<String, String> {
-        method = "state_getStorage"
-        responseType = String::class
-        paramsType = String::class
-        params = listOf(key.hex.encode(true))
-    }?.let {
-        codec.fromScale(it, type)
+    ): T? {
+        return rpc.sendRequest<String, String> {
+            method = "state_getStorage"
+            responseType = String::class
+            paramsType = String::class
+            params = listOf(key.hex.encode(true))
+        }?.let {
+            codec.fromScale(it, type)
+        }
     }
 
+    override suspend fun <T : Any> fetchStorageKeys(
+        key: ByteArray,
+        type: KClass<T>
+    ): List<T> {
+        val keyPrefix = key.hex.encode(true)
+        return rpc.sendRequest(
+            "state_getKeys",
+            listOf(keyPrefix),
+            serializer(String::class),
+            ListSerializer(serializer(String::class))
+        )?.let { it ->
+            it.map { codec.fromScale(it.removePrefix(keyPrefix), type) }
+        }.orEmpty()
+    }
+
+    override suspend fun <T : Any> fetchStorageKeys(
+        item: RuntimeModuleStorageItem,
+        keys: List<ByteArrayConvertible>,
+        storage: RuntimeModuleStorage,
+        type: KClass<T>
+    ) = fetchStorageKeys(hashersProvider.getStorageHasher(storage).hash(item), type)
     /**
      * Fetches a storage item
      */

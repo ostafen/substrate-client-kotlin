@@ -27,11 +27,11 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlin.reflect.KClass
-import kotlin.reflect.full.createInstance
 
 internal const val rpcVersion = "2.0"
 
@@ -47,6 +47,9 @@ class RpcRequestBuilder<P: Any, R: Any>(
 interface Rpc {
     suspend fun send(request: RpcRequest): RpcResponse
     suspend fun <P: Any, R: Any> sendRequest(block: RpcRequestBuilder<P, R>.() -> Unit): R?
+
+    suspend fun <P: Any, R: Any> sendRequest(method: String, params: List<P>, paramsSerializer: KSerializer<P>?, responseSerializer: KSerializer<R>): R?
+
 }
 
 /**
@@ -86,25 +89,16 @@ internal class RpcClient(
         }
     }.body()
 
-    /**
-     * Sending a request by creating `RpcRequest`
-     */
-    override suspend fun <P: Any, R: Any> sendRequest(block: RpcRequestBuilder<P, R>.() -> Unit): R? {
-        val builder = RpcRequestBuilder<P, R>()
-        block(builder)
-
-        val params = builder.params?.let {
-            it.first()::class.createInstance()
-            val paramsSerializer = serializer(builder.paramsType)
-            Json.encodeToJsonElement(ListSerializer(paramsSerializer), it)
-        } ?: JsonNull
-
-        val responseSerializer = serializer(builder.responseType)
-
+    override suspend fun <P : Any, R : Any> sendRequest(
+        method: String,
+        params: List<P>,
+        paramsSerializer: KSerializer<P>?,
+        responseSerializer: KSerializer<R>
+    ): R? {
         val request = RpcRequest(
             id = ++requestCounter,
-            method = builder.method,
-            params = params
+            method = method,
+            params = if(paramsSerializer == null) JsonNull else Json.encodeToJsonElement(ListSerializer(paramsSerializer), params)
         )
 
         val rpcResponse: RpcResponse
@@ -121,5 +115,16 @@ internal class RpcClient(
         return rpcResponse.result?.let {
             Json.decodeFromJsonElement(responseSerializer, it)
         }
+    }
+
+    /**
+     * Sending a request by creating `RpcRequest`
+     */
+    override suspend fun <P: Any, R: Any> sendRequest(block: RpcRequestBuilder<P, R>.() -> Unit): R? {
+        val builder = RpcRequestBuilder<P, R>()
+        block(builder)
+
+        val paramsSerializer = builder.paramsType?.let { serializer(builder.paramsType) }
+        return sendRequest(builder.method, builder.params.orEmpty(), paramsSerializer, serializer(builder.responseType))
     }
 }

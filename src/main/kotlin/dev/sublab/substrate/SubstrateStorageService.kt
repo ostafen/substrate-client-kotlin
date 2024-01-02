@@ -44,6 +44,8 @@ interface SubstrateStorage {
         keys: List<ByteArrayConvertible>,
         storage: RuntimeModuleStorage, type: KClass<T>
     ): T?
+
+    fun <T: Any> fetchKeys(moduleName: String, itemName: String, keys: List<ByteArrayConvertible>, type: KClass<T>): Flow<List<T>>
 }
 
 /**
@@ -99,6 +101,11 @@ internal class SubstrateStorageService(
         = find(moduleName, itemName).map { result ->
             result?.let { fetch(it.item, keys, it.storage, type) }
         }
+
+    override fun <T: Any> fetchKeys(moduleName: String, itemName: String, keys: List<ByteArrayConvertible>, type: KClass<T>)
+            = find(moduleName, itemName).map { result ->
+        result?.let { stateRpc.fetchStorageKeys(it.item, keys, it.storage, type) }.orEmpty()
+    }
 
     /**
      * Fetches storage item from a specified storage
