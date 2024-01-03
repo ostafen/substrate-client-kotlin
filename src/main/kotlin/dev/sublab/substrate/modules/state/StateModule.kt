@@ -144,7 +144,8 @@ class StateModuleClient(
         keys: List<ByteArrayConvertible>,
         storage: RuntimeModuleStorage,
         type: KClass<T>
-    ) = fetchStorageKeys(hashersProvider.getStorageHasher(storage).hash(item), type)
+    ) = fetchStorageKeys(hashersProvider.getStorageHasher(storage).hash(item, keys), type)
+
     /**
      * Fetches a storage item
      */
