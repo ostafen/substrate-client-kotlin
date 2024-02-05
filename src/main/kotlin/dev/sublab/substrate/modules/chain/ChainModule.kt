@@ -29,7 +29,7 @@ interface ChainModule {
     /**
      * Gets block hash using the provided number as a parameter for `RPC` request
      */
-    suspend fun getBlockHash(number: Int): String?
+    suspend fun getBlockHash(number: Int?): String?
 }
 
 /**
@@ -38,10 +38,10 @@ interface ChainModule {
 class ChainModuleClient(
     private val rpc: Rpc
     ): ChainModule {
-    override suspend fun getBlockHash(number: Int) = rpc.sendRequest<String, String> {
+    override suspend fun getBlockHash(number: Int?) = rpc.sendRequest<String, String> {
         method = "chain_getBlockHash"
         responseType = String::class
-        params = listOf(number.toUInt().toByteArray().hex.encode())
+        params = if(number != null) listOf(number.toUInt().toByteArray().reversedArray().hex.encode()) else emptyList()
         paramsType = String::class
     }
 }
